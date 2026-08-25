@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>DCF Companion Live Analyzer v2.1</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0d1117;--panel:#151b23;--panel2:#1b222c;--line:#2d3744;
+  --text:#f4f7fb;--muted:#9ba8b7;--good:#76d39b;--warn:#f0bd65;--bad:#f06d84;
+  --accent:#8fb8ff;--shadow:0 12px 38px rgba(0,0,0,.36);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+body{padding:max(16px,env(safe-area-inset-top)) 14px max(28px,env(safe-area-inset-bottom))}
+.wrap{max-width:980px;margin:0 auto}
+.hero{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+h1{font-size:25px;line-height:1.08;margin:0 0 5px;letter-spacing:-.035em}
+.sub{font-size:12px;line-height:1.45;color:var(--muted);margin:0;max-width:680px}
+.badge{font-size:9px;border:1px solid var(--line);border-radius:999px;padding:5px 8px;color:var(--muted);white-space:nowrap}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:13px;margin:10px 0;box-shadow:var(--shadow)}
+.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+label{font-size:11px;color:var(--muted);display:block;margin-bottom:5px}
+input,select,textarea,button{
+  font:inherit;color:var(--text);border-radius:10px;border:1px solid var(--line);
+  background:var(--panel2);min-height:44px
+}
+input,select,textarea{width:100%;padding:10px 11px;font-size:16px;outline:none}
+textarea{min-height:94px;resize:vertical;line-height:1.4}
+button{padding:0 13px;font-size:12px;font-weight:750;cursor:pointer}
+button.primary{background:#eef4ff;color:#111722;border-color:#eef4ff}
+button.good{background:#183126;border-color:#315c45;color:#aef0c5}
+button.warn{background:#342718;border-color:#604a29;color:#ffd697}
+button.danger{background:#321a21;border-color:#62303d;color:#ffb5c3}
+button:disabled{opacity:.5;cursor:not-allowed}
+.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:10px;min-width:0}
+.kpi small{display:block;color:var(--muted);font-size:9px;margin-bottom:5px}
+.kpi strong{font-size:20px;line-height:1;display:block;overflow-wrap:anywhere}
+.kpi .tiny{font-size:9px;color:var(--muted);margin-top:5px}
+.sectionTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}
+.sectionTitle h2{font-size:14px;margin:0}
+.status{font-size:11px;line-height:1.45;padding:9px 10px;background:var(--panel2);border-radius:10px;border:1px solid var(--line)}
+.status.good{border-color:#315c45;color:#b7edca}
+.status.warn{border-color:#604a29;color:#f8d79a}
+.status.bad{border-color:#62303d;color:#ffc1cc}
+.latest{font-size:12px;font-weight:700}
+.tiny{font-size:9px;color:var(--muted);line-height:1.4}
+.tableWrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:10px;min-width:590px}
+th,td{padding:7px 5px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+th{color:var(--muted);font-size:9px;font-weight:650}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+.deltaPos{color:var(--bad)} .deltaNeg{color:var(--good)}
+.callout{font-size:10px;line-height:1.45;color:var(--muted);background:var(--panel2);padding:9px 10px;border-radius:10px;margin-top:8px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.tabs button{min-height:36px;white-space:nowrap}
+.tabs button.active{background:#e8efff;color:#10151d;border-color:#e8efff}
+.progress{height:8px;background:#202a35;border-radius:999px;overflow:hidden;margin-top:8px}
+.progress>div{height:100%;width:0;background:#dce8ff;transition:width .15s}
+details{border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:10px;margin-top:8px}
+summary{cursor:pointer;font-size:11px;font-weight:750}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;word-break:break-all}
+.footer{font-size:9px;color:var(--muted);line-height:1.5;margin:12px 2px}
+
+.quickGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.quickCard{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:11px;min-width:0}
+.quickCard .qTop{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:7px}
+.quickCard .qMult{font-size:12px;font-weight:800}
+.quickCard .qZone{font-size:9px;font-weight:800;border-radius:999px;padding:4px 7px;border:1px solid var(--line);white-space:nowrap}
+.quickCard .qGap{font-size:26px;font-weight:850;line-height:1;margin-bottom:6px}
+.quickCard .qMeta{font-size:9px;color:var(--muted);line-height:1.35}
+.q-typical{color:#c7d0da;background:#20262e}
+.q-elevated{color:#c8ddff;background:#1d2a3b;border-color:#334c6d!important}
+.q-unusual{color:#ffe2a6;background:#35291a;border-color:#6b512c!important}
+.q-rare{color:#ffc4cf;background:#3a2027;border-color:#6f3947!important}
+.q-extreme{color:#ff9fb1;background:#471b28;border-color:#8b3349!important}
+.quickLegend{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.quickLegend span{font-size:9px;padding:4px 7px;border-radius:999px;border:1px solid var(--line)}
+.simpleNote{font-size:10px;line-height:1.45;color:var(--muted);margin-top:8px}
+@media(max-width:720px){.quickGrid{grid-template-columns:repeat(2,1fr)}}
+
+@media(max-width:720px){
+  .grid4{grid-template-columns:repeat(2,1fr)}
+  .grid5{grid-template-columns:repeat(2,1fr)}
+  .grid2{grid-template-columns:1fr}
+  .hero{align-items:flex-start}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div>
+      <h1>DCF Companion Live Analyzer</h1>
+      <p class="sub">Keep Degen Coin Flip open in Phantom and this page open separately in Safari. The new Quick Gap View puts the major gaps first and labels how unusual each drought is from your saved history.</p>
+    </div>
+    <div class="badge">READ ONLY • v2.1</div>
+  </div>
+
+  <section class="panel">
+    <div class="sectionTitle">
+      <h2>Live connection</h2>
+      <span class="tiny" id="clock">—</span>
+    </div>
+    <div id="status" class="status warn">Not connected yet.</div>
+    <div class="grid2" style="margin-top:9px">
+      <div>
+        <label for="roundInput">Current round ID (optional fallback)</label>
+        <input id="roundInput" inputmode="numeric" placeholder="e.g. 1259339">
+      </div>
+      <div>
+        <label for="pollSeconds">Refresh interval</label>
+        <select id="pollSeconds">
+          <option value="5">5 seconds</option>
+          <option value="10" selected>10 seconds</option>
+          <option value="20">20 seconds</option>
+          <option value="30">30 seconds</option>
+          <option value="60">60 seconds</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:9px">
+      <button class="primary" id="startBtn">Start Live</button>
+      <button id="refreshBtn">Refresh Now</button>
+      <button id="stopBtn">Stop</button>
+      <button id="exportBtn">Export CSV</button>
+    </div>
+
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+      <div class="sectionTitle" style="margin-bottom:8px">
+        <h2 style="font-size:12px">Historical backfill</h2>
+        <span class="tiny" id="backfillCount">0 / 5,000</span>
+      </div>
+      <div class="grid2">
+        <div>
+          <label for="backfillTarget">Auto-backfill target</label>
+          <select id="backfillTarget">
+            <option value="1000">1,000 rounds</option>
+            <option value="2000">2,000 rounds</option>
+            <option value="5000" selected>5,000 rounds</option>
+            <option value="10000">10,000 rounds</option>
+            <option value="20000">20,000 rounds</option>
+          </select>
+        </div>
+        <div>
+          <label for="autoBackfill">Automatic on Start Live</label>
+          <select id="autoBackfill">
+            <option value="yes" selected>Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="good" id="backfillBtn">Backfill Now</button>
+        <button id="stopBackfillBtn">Stop Backfill</button>
+      </div>
+      <div id="backfillStatus" class="tiny" style="margin-top:7px">Older history has not been requested yet.</div>
+      <div class="progress"><div id="backfillProgress"></div></div>
+    </div>
+
+    <div class="callout">
+      If Safari reports a CORS/network error, DCF is refusing direct requests from a separate web page. The analyzer still works with imported data, and the same file can later be paired with a tiny read-only proxy.
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sectionTitle">
+      <h2>Quick Gap View</h2>
+      <span class="tiny">rarity, not a prediction</span>
+    </div>
+    <div class="quickGrid" id="quickGapGrid"></div>
+    <div class="quickLegend">
+      <span class="q-typical">Typical &lt;50th</span>
+      <span class="q-elevated">Elevated 50–75th</span>
+      <span class="q-unusual">Unusual 75–90th</span>
+      <span class="q-rare">Rare 90–97th</span>
+      <span class="q-extreme">Extreme 97th+</span>
+    </div>
+    <div class="simpleNote">
+      A higher percentile only means the current drought is historically unusual in your saved data. It does not mean the next round has become more likely to hit that multiplier.
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sectionTitle">
+      <h2>Latest data</h2>
+      <span class="tiny" id="savedCount">0 rounds saved</span>
+    </div>
+    <div class="grid4">
+      <div class="kpi"><small>Latest round</small><strong id="latestRound">—</strong><div class="tiny" id="latestCrash">—</div></div>
+      <div class="kpi"><small>Normal &lt;2x rate</small><strong id="whiteBaseline">—</strong><div class="tiny">all saved rounds</div></div>
+      <div class="kpi"><small>Average multiplier</small><strong id="avgCrash">—</strong><div class="tiny">all saved rounds</div></div>
+      <div class="kpi"><small>Consecutive coverage</small><strong id="coverage">—</strong><div class="tiny">largest saved segment</div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="sectionTitle"><h2>Current gaps</h2><span class="tiny">rounds since ≥ threshold</span></div>
+    <div class="grid4" id="gapGrid"></div>
+  </section>
+
+  <section class="panel">
+    <div class="sectionTitle">
+      <h2>After Pump Analysis</h2>
+      <span class="tiny" id="pumpEvents">—</span>
+    </div>
+    <div class="tabs" id="pumpTabs"></div>
+    <div class="grid2" style="margin-top:9px">
+      <div class="kpi"><small>Baseline &lt;2x</small><strong id="pumpBaselineWhite">—</strong></div>
+      <div class="kpi"><small>Baseline avg multiplier</small><strong id="pumpBaselineAvg">—</strong></div>
+    </div>
+    <div class="tableWrap" style="margin-top:8px">
+      <table>
+        <thead><tr><th>Next</th><th>&lt;2x</th><th>Δ baseline</th><th>Avg x</th><th>All &lt;2x</th><th>Events</th></tr></thead>
+        <tbody id="pumpBody"></tbody>
+      </table>
+    </div>
+    <div class="callout" id="pumpSummary">Collecting data…</div>
+  </section>
+
+  <section class="panel">
+    <div class="sectionTitle"><h2>Manual proof check</h2><span class="tiny">DCF 11-result commitment</span></div>
+    <div class="grid2">
+      <div>
+        <label for="proofRound">Round</label>
+        <input id="proofRound" inputmode="numeric" placeholder="1259243">
+      </div>
+      <div>
+        <label for="proofHash">Expected hash</label>
+        <input id="proofHash" autocapitalize="off" autocomplete="off" placeholder="64-char hash">
+      </div>
+    </div>
+    <div style="margin-top:8px">
+      <label for="proofResults">Current + next 10 crash values (11 total)</label>
+      <textarea id="proofResults" placeholder="1.79, 3.35, 2.87, 1.40, ..."></textarea>
+    </div>
+    <div style="margin-top:8px">
+      <label for="proofSalt">Salt</label>
+      <input id="proofSalt" autocapitalize="off" autocomplete="off" placeholder="64-char salt">
+    </div>
+    <div class="row" style="margin-top:9px">
+      <button class="good" id="verifyBtn">Verify Proof</button>
+      <button id="fillExampleBtn">Load verified example</button>
+    </div>
+    <div id="proofStatus" class="status" style="margin-top:9px">Enter a round, 11 results, salt, and expected hash.</div>
+    <div class="progress"><div id="proofProgress"></div></div>
+    <details>
+      <summary>What the verifier calculates</summary>
+      <p class="tiny">It creates <code>ROUND_CURRENT_NEXT1_..._NEXT10_SALT</code> with each result formatted to 2 decimal places, hashes it once with SHA-256, then hashes the resulting lowercase hex string 100,000 additional times.</p>
+    </details>
+  </section>
+
+  <section class="panel">
+    <div class="sectionTitle"><h2>Import / backup</h2><span class="tiny">fallback if live API is blocked</span></div>
+    <label for="importText">Paste CSV or round/multiplier pairs</label>
+    <textarea id="importText" placeholder="1259243,1.79&#10;1259244,3.35&#10;..."></textarea>
+    <div class="row" style="margin-top:9px">
+      <button id="importBtn">Import Data</button>
+      <button class="danger" id="clearBtn">Clear Saved Data</button>
+    </div>
+    <div id="importStatus" class="tiny" style="margin-top:7px"></div>
+  </section>
+
+  <p class="footer">
+    This tool measures historical patterns only. “Overdue,” gap percentiles, or post-pump correlations do not guarantee a future multiplier. It does not connect to Phantom, place bets, cash out, or request wallet permissions.
+  </p>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+const API_BASE = 'https://api.dealer.degencoinflip.com/v1/game/2/room/1';
+const STORE = 'dcf_companion_rounds_v1';
+const SETTINGS = 'dcf_companion_settings_v1';
+const MAX_ROUNDS = 25000;
+const GAP_THRESHOLDS = [5,10,25,30,50,100,500,1000];
+const PUMP_THRESHOLDS = [5,10,25,50,100];
+const HORIZONS = [1,3,5,10,20];
+
+const $ = s => document.querySelector(s);
+let rounds = loadJSON(STORE, {});
+let prefs = loadJSON(SETTINGS, { pumpThreshold:25, pollSeconds:10, manualRound:'', backfillTarget:5000, autoBackfill:true });
+let liveTimer = null;
+let isPolling = false;
+let isBackfilling = false;
+let stopBackfillRequested = false;
+
+function loadJSON(k, fallback){
+  try{ const x=localStorage.getItem(k); return x?JSON.parse(x):fallback }catch(_){ return fallback }
+}
+function savePrefs(){ try{localStorage.setItem(SETTINGS,JSON.stringify(prefs))}catch(_){} }
+function saveRounds(){
+  const keys=Object.keys(rounds).map(Number).filter(Number.isFinite).sort((a,b)=>a-b);
+  if(keys.length>MAX_ROUNDS) for(const k of keys.slice(0,keys.length-MAX_ROUNDS)) delete rounds[String(k)];
+  try{localStorage.setItem(STORE,JSON.stringify(rounds))}catch(_){}
+}
+function num(v){
+  if(typeof v==='number'&&Number.isFinite(v))return v;
+  if(typeof v==='string'){
+    const s=v.replace(/,/g,'').replace(/x$/i,'').trim();
+    if(/^-?\d+(?:\.\d+)?$/.test(s)){ const n=Number(s); if(Number.isFinite(n))return n; }
+  }
+  return null;
+}
+function ownRound(o){
+  if(!o||typeof o!=='object'||Array.isArray(o))return null;
+  const keys=['roundId','round_id','roundNumber','round_number','currentRound','round'];
+  for(const want of keys){
+    for(const [k,v] of Object.entries(o)){
+      if(k.toLowerCase().replace(/[\s_-]/g,'')===want.toLowerCase().replace(/[\s_-]/g,'')){
+        const n=num(v); if(n!==null&&Number.isInteger(n)&&n>1000)return n;
+      }
+    }
+  }
+  for(const [k,v] of Object.entries(o)){
+    if(/round/i.test(k)){ const n=num(v); if(n!==null&&Number.isInteger(n)&&n>1000)return n; }
+  }
+  return null;
+}
+function ownCrash(o){
+  if(!o||typeof o!=='object'||Array.isArray(o))return null;
+  const keys=['crash','crashValue','crash_value','crashResult','crash_result','currentResult','current_result','multiplier','bust','bustValue'];
+  for(const want of keys){
+    for(const [k,v] of Object.entries(o)){
+      if(k.toLowerCase().replace(/[\s_-]/g,'')===want.toLowerCase().replace(/[\s_-]/g,'')){
+        const n=num(v); if(n!==null&&n>=1&&n<=10000000)return n;
+      }
+    }
+  }
+  for(const [k,v] of Object.entries(o)){
+    if(/crash|multiplier|bust/i.test(k)){ const n=num(v); if(n!==null&&n>=1&&n<=10000000)return n; }
+  }
+  return null;
+}
+function scan(data){
+  const pairs=[], roundCandidates=[], seen=new Set();
+  function walk(x,inherited=null,depth=0){
+    if(depth>16||x==null)return;
+    if(Array.isArray(x)){ for(const y of x)walk(y,inherited,depth+1); return; }
+    if(typeof x!=='object')return;
+    const r=ownRound(x)??inherited;
+    if(r!==null)roundCandidates.push(r);
+    const c=ownCrash(x);
+    if(r!==null&&c!==null){
+      const key=r+':'+c;
+      if(!seen.has(key)){seen.add(key);pairs.push({round:Math.trunc(r),crash:Number(c)})}
+    }
+    for(const y of Object.values(x)) if(y&&typeof y==='object')walk(y,r,depth+1);
+  }
+  walk(data);
+  return {pairs,roundCandidates};
+}
+function ingest(data){
+  const {pairs,roundCandidates}=scan(data);
+  let added=0;
+  for(const p of pairs){
+    const k=String(p.round);
+    if(!rounds[k]||Number(rounds[k].crash)!==p.crash){
+      rounds[k]={round:p.round,crash:p.crash,seenAt:Date.now()}; added++;
+    }
+  }
+  if(added)saveRounds();
+  return {pairs,roundCandidates,added};
+}
+function sorted(){
+  return Object.values(rounds).map(x=>({round:Number(x.round),crash:Number(x.crash)}))
+    .filter(x=>Number.isFinite(x.round)&&Number.isFinite(x.crash)).sort((a,b)=>a.round-b.round);
+}
+function segments(data){
+  if(!data.length)return [];
+  const out=[]; let cur=[data[0]];
+  for(let i=1;i<data.length;i++){
+    if(data[i].round===data[i-1].round+1)cur.push(data[i]);
+    else{out.push(cur);cur=[data[i]]}
+  }
+  out.push(cur); return out;
+}
+function gapInfo(data,t){
+  if(!data.length)return {current:null,completed:[]};
+
+  // Historical completed gaps are calculated only inside contiguous segments.
+  // This prevents missing API pages from being mistaken for a giant real gap.
+  const segs=segments(data);
+  const completed=[];
+
+  for(const seg of segs){
+    const hits=seg.filter(x=>x.crash>=t);
+    for(let i=1;i<hits.length;i++){
+      completed.push(Math.max(0,hits[i].round-hits[i-1].round-1));
+    }
+  }
+
+  // Current gap is valid only from the newest contiguous segment.
+  const latestSeg=segs[segs.length-1]||[];
+  const hits=latestSeg.filter(x=>x.crash>=t);
+  if(!hits.length)return {current:null,completed};
+
+  const latest=latestSeg[latestSeg.length-1];
+  const lastHit=hits[hits.length-1];
+  return {current:Math.max(0,latest.round-lastHit.round),completed};
+}
+function stat(a){
+  if(!a.length)return {avg:null,max:null,med:null};
+  const s=[...a].sort((x,y)=>x-y), avg=s.reduce((x,y)=>x+y,0)/s.length, m=Math.floor(s.length/2);
+  return {avg,max:s[s.length-1],med:s.length%2?s[m]:(s[m-1]+s[m])/2};
+}
+function pctile(a,c){return !a.length||c==null?null:100*a.filter(v=>v<=c).length/a.length}
+function fmtPct(v,d=1){return v==null||!Number.isFinite(v)?'—':(v*100).toFixed(d)+'%'}
+function fmt(v,d=2){return v==null||!Number.isFinite(v)?'—':Number(v).toFixed(d)}
+function deltaClass(v){return v>0?'deltaPos':v<0?'deltaNeg':''}
+function afterPump(data,t){
+  const baseWhite=data.length?data.filter(x=>x.crash<2).length/data.length:null;
+  const baseAvg=data.length?data.reduce((s,x)=>s+x.crash,0)/data.length:null;
+  const map=new Map(data.map(x=>[x.round,x]));
+  const events=data.filter(x=>x.crash>=t);
+  const rows=[];
+  for(const h of HORIZONS){
+    let eligible=0,total=0,white=0,sum=0,allWhite=0;
+    for(const e of events){
+      const f=[]; let ok=true;
+      for(let j=1;j<=h;j++){const x=map.get(e.round+j);if(!x){ok=false;break}f.push(x)}
+      if(!ok)continue;
+      eligible++; total+=f.length; let all=true;
+      for(const x of f){sum+=x.crash;if(x.crash<2)white++;else all=false}
+      if(all)allWhite++;
+    }
+    rows.push({
+      h,eligible,total,
+      whiteRate:total?white/total:null,
+      avg:total?sum/total:null,
+      allWhite:eligible?allWhite/eligible:null,
+      baseWhite,baseAvg
+    });
+  }
+  return {events:events.length,baseWhite,baseAvg,rows};
+}
+
+function zoneForPercentile(p){
+  if(p==null||!Number.isFinite(p))return {label:'Need data',cls:'q-typical'};
+  if(p>=97)return {label:'Extreme',cls:'q-extreme'};
+  if(p>=90)return {label:'Rare',cls:'q-rare'};
+  if(p>=75)return {label:'Unusual',cls:'q-unusual'};
+  if(p>=50)return {label:'Elevated',cls:'q-elevated'};
+  return {label:'Typical',cls:'q-typical'};
+}
+function renderQuickView(data){
+  const grid=$('#quickGapGrid');
+  if(!grid)return;
+  const majors=[5,10,25,50,100,500,1000];
+  grid.innerHTML=majors.map(t=>{
+    const g=gapInfo(data,t);
+    const s=stat(g.completed);
+    const p=pctile(g.completed,g.current);
+    const z=zoneForPercentile(p);
+    const current=g.current==null?'—':g.current;
+    const pctText=p==null?'—':p.toFixed(0)+'th pct';
+    const avgText=s.avg==null?'—':s.avg.toFixed(1);
+    return `<div class="quickCard">
+      <div class="qTop">
+        <div class="qMult">${t}x</div>
+        <div class="qZone ${z.cls}">${z.label}</div>
+      </div>
+      <div class="qGap">${current}</div>
+      <div class="qMeta">${pctText} · avg gap ${avgText} · samples ${g.completed.length}</div>
+    </div>`;
+  }).join('');
+}
+
+function setStatus(text,type='warn'){
+  const el=$('#status');el.className='status '+type;el.textContent=text;
+}
+function render(){
+  const data=sorted();
+  $('#savedCount').textContent=data.length.toLocaleString()+' rounds saved';
+  const target=Number(prefs.backfillTarget)||5000;
+  const backfillCount=$('#backfillCount');
+  const backfillProgress=$('#backfillProgress');
+  if(backfillCount)backfillCount.textContent=data.length.toLocaleString()+' / '+target.toLocaleString();
+  if(backfillProgress)backfillProgress.style.width=Math.min(100,(data.length/target)*100).toFixed(1)+'%';
+  if(data.length){
+    const last=data[data.length-1];
+    $('#latestRound').textContent='#'+last.round.toLocaleString();
+    $('#latestCrash').textContent=last.crash.toFixed(2)+'x';
+    $('#whiteBaseline').textContent=fmtPct(data.filter(x=>x.crash<2).length/data.length);
+    $('#avgCrash').textContent=fmt(data.reduce((s,x)=>s+x.crash,0)/data.length)+'x';
+    const segs=segments(data), longest=segs.length?Math.max(...segs.map(s=>s.length)):0;
+    $('#coverage').textContent=longest.toLocaleString();
+  }else{
+    $('#latestRound').textContent=$('#latestCrash').textContent=$('#whiteBaseline').textContent=$('#avgCrash').textContent=$('#coverage').textContent='—';
+  }
+
+  renderQuickView(data);
+
+  $('#gapGrid').innerHTML=GAP_THRESHOLDS.map(t=>{
+    const g=gapInfo(data,t),s=stat(g.completed),p=pctile(g.completed,g.current);
+    return `<div class="kpi"><small>${t}x gap</small><strong>${g.current==null?'—':g.current}</strong><div class="tiny">pct ${p==null?'—':p.toFixed(0)+'%'} · avg ${s.avg==null?'—':s.avg.toFixed(1)} · max ${s.max==null?'—':s.max}</div></div>`;
+  }).join('');
+
+  renderPump(data);
+}
+function renderPump(data){
+  const t=Number(prefs.pumpThreshold)||25;
+  $('#pumpTabs').innerHTML=PUMP_THRESHOLDS.map(x=>`<button data-pump="${x}" class="${x===t?'active':''}">After ${x}x+</button>`).join('');
+  document.querySelectorAll('[data-pump]').forEach(b=>b.addEventListener('click',()=>{prefs.pumpThreshold=Number(b.dataset.pump);savePrefs();render()}));
+  const a=afterPump(data,t);
+  $('#pumpEvents').textContent=a.events+' pump events saved';
+  $('#pumpBaselineWhite').textContent=fmtPct(a.baseWhite);
+  $('#pumpBaselineAvg').textContent=a.baseAvg==null?'—':fmt(a.baseAvg)+'x';
+  $('#pumpBody').innerHTML=a.rows.map(r=>{
+    const d=r.whiteRate==null||r.baseWhite==null?null:(r.whiteRate-r.baseWhite);
+    return `<tr><td>${r.h}</td><td>${fmtPct(r.whiteRate)}</td><td class="${d==null?'':deltaClass(d)}">${d==null?'—':((d>0?'+':'')+(d*100).toFixed(1)+' pts')}</td><td>${r.avg==null?'—':fmt(r.avg)+'x'}</td><td>${fmtPct(r.allWhite)}</td><td>${r.eligible}</td></tr>`;
+  }).join('');
+  const r=a.rows.find(x=>x.h===5);
+  if(!r||r.whiteRate==null){
+    $('#pumpSummary').textContent='Need more consecutive round history for a 5-round post-pump comparison.';
+  }else{
+    const d=(r.whiteRate-r.baseWhite)*100;
+    const dir=Math.abs(d)<2?'about the same as':d>0?'higher than':'lower than';
+    $('#pumpSummary').innerHTML=`After <b>${t}x+</b>, the next 5 rounds were &lt;2x <b>${fmtPct(r.whiteRate)}</b> of the time across <b>${r.eligible}</b> complete events — ${dir} the normal baseline of <b>${fmtPct(r.baseWhite)}</b> (${d>0?'+':''}${d.toFixed(1)} pts).`;
+  }
+}
+
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+
+async function backfillHistory(){
+  if(isBackfilling)return;
+  const target=Math.max(100,Math.min(MAX_ROUNDS,Number($('#backfillTarget').value)||5000));
+  prefs.backfillTarget=target;
+  prefs.autoBackfill=$('#autoBackfill').value==='yes';
+  savePrefs();
+
+  let data=sorted();
+  if(data.length>=target){
+    $('#backfillStatus').textContent=`Already have ${data.length.toLocaleString()} rounds, meeting the ${target.toLocaleString()} target.`;
+    render();
+    return;
+  }
+
+  if(!data.length){
+    $('#backfillStatus').textContent='Need one successful live refresh before older rounds can be backfilled.';
+    await poll();
+    data=sorted();
+    if(!data.length)return;
+  }
+
+  isBackfilling=true;
+  stopBackfillRequested=false;
+  $('#backfillBtn').disabled=true;
+  $('#backfillStatus').textContent='Starting historical backfill…';
+
+  try{
+    let noProgress=0;
+    let pages=0;
+
+    while(!stopBackfillRequested){
+      data=sorted();
+      if(data.length>=target)break;
+      if(!data.length)break;
+
+      const oldest=data[0].round;
+      const cursor=oldest-1;
+      const beforeCount=data.length;
+
+      let response=null;
+      let lastErr=null;
+
+      // DCF appears to cap practical history pages; try 100 first because it
+      // matches the live endpoint behavior already confirmed on the iPhone.
+      for(const limit of [100,200,500]){
+        try{
+          response=await fetchJSON(`${API_BASE}/rounds?roundId=${cursor}&limit=${limit}`);
+          break;
+        }catch(e){
+          lastErr=e;
+        }
+      }
+
+      if(!response){
+        throw lastErr||new Error('Older-history request failed');
+      }
+
+      const z=ingest(response);
+      pages++;
+      data=sorted();
+
+      const added=data.length-beforeCount;
+      const pct=Math.min(100,(data.length/target)*100);
+      $('#backfillProgress').style.width=pct.toFixed(1)+'%';
+      $('#backfillCount').textContent=data.length.toLocaleString()+' / '+target.toLocaleString();
+      $('#backfillStatus').textContent=
+        `Backfilling… ${data.length.toLocaleString()} rounds saved • ${pages} page${pages===1?'':'s'} • ${added} new this page`;
+
+      render();
+
+      if(added<=0){
+        noProgress++;
+        if(noProgress>=2){
+          throw new Error('DCF returned no older rounds twice in a row');
+        }
+      }else{
+        noProgress=0;
+      }
+
+      // Be polite to the public endpoint and keep iPhone Safari responsive.
+      await sleep(350);
+    }
+
+    data=sorted();
+    if(stopBackfillRequested){
+      $('#backfillStatus').textContent=`Backfill stopped at ${data.length.toLocaleString()} saved rounds.`;
+    }else if(data.length>=target){
+      $('#backfillStatus').textContent=`Backfill complete ✅ ${data.length.toLocaleString()} rounds saved.`;
+    }else{
+      $('#backfillStatus').textContent=`Backfill ended with ${data.length.toLocaleString()} rounds saved.`;
+    }
+  }catch(e){
+    $('#backfillStatus').textContent='Backfill stopped: '+(e&&e.message?e.message:String(e));
+  }finally{
+    isBackfilling=false;
+    $('#backfillBtn').disabled=false;
+    render();
+  }
+}
+
+async function fetchJSON(url){
+  const ctl=new AbortController(); const timer=setTimeout(()=>ctl.abort(),10000);
+  try{
+    const r=await fetch(url,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store',signal:ctl.signal,headers:{'Accept':'application/json'}});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return await r.json();
+  }finally{clearTimeout(timer)}
+}
+async function poll(){
+  if(isPolling)return;
+  isPolling=true;
+  $('#refreshBtn').disabled=true;
+  try{
+    let discovered=null, totalAdded=0, responseCount=0;
+    const candidates=[
+      `${API_BASE}/proof`,
+      `${API_BASE}/rounds?limit=500`
+    ];
+    for(const url of candidates){
+      try{
+        const j=await fetchJSON(url);responseCount++;
+        const z=ingest(j);totalAdded+=z.added;
+        if(z.roundCandidates.length)discovered=Math.max(...z.roundCandidates);
+      }catch(e){}
+    }
+    const manual=Number(String($('#roundInput').value||'').replace(/,/g,''));
+    if(Number.isFinite(manual)&&manual>1000)discovered=Math.max(discovered||0,manual);
+    const existing=sorted();
+    if(existing.length)discovered=Math.max(discovered||0,existing[existing.length-1].round);
+
+    if(discovered){
+      for(const limit of [500,100]){
+        try{
+          const j=await fetchJSON(`${API_BASE}/rounds?roundId=${Math.trunc(discovered)}&limit=${limit}`);
+          responseCount++;
+          const z=ingest(j);totalAdded+=z.added;
+          if(z.roundCandidates.length)discovered=Math.max(discovered,...z.roundCandidates);
+          break;
+        }catch(e){}
+      }
+    }
+    render();
+    const data=sorted();
+    if(responseCount){
+      setStatus(`Connected to DCF API. ${totalAdded?totalAdded+' new round result'+(totalAdded===1?'':'s')+' saved.':'No new result this refresh.'}${data.length?' Latest saved: #'+data[data.length-1].round.toLocaleString()+'.':''}`,'good');
+
+      // Automatic historical backfill runs after a successful live connection.
+      const target=Number($('#backfillTarget').value)||5000;
+      if($('#autoBackfill').value==='yes' && data.length<target && !isBackfilling){
+        setTimeout(()=>backfillHistory(),250);
+      }
+    }else{
+      throw new Error('No DCF API request succeeded');
+    }
+  }catch(e){
+    const msg=(e&&e.name==='AbortError')?'Request timed out':(e&&e.message?e.message:String(e));
+    setStatus(`Live request failed: ${msg}. If this repeats, Safari is likely being blocked by DCF's browser/CORS policy. You can still import data below.`,'bad');
+  }finally{
+    isPolling=false;$('#refreshBtn').disabled=false;
+  }
+}
+function start(){
+  stop();
+  prefs.pollSeconds=Number($('#pollSeconds').value)||10;
+  prefs.manualRound=$('#roundInput').value.trim();
+  prefs.backfillTarget=Number($('#backfillTarget').value)||5000;
+  prefs.autoBackfill=$('#autoBackfill').value==='yes';
+  savePrefs();
+  poll();
+  liveTimer=setInterval(poll,prefs.pollSeconds*1000);
+  $('#startBtn').textContent='Live Running';
+}
+function stop(){
+  if(liveTimer){clearInterval(liveTimer);liveTimer=null}
+  $('#startBtn').textContent='Start Live';
+}
+function exportCSV(){
+  const data=sorted();
+  const csv=['round,crash',...data.map(x=>`${x.round},${x.crash}`)].join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='dcf_crash_rounds_'+Date.now()+'.csv';document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function importData(){
+  const text=$('#importText').value;
+  const lines=text.split(/\n+/);let n=0;
+  for(const line of lines){
+    const m=line.trim().match(/^\s*([\d,]+)\s*[,;\t ]+\s*(\d+(?:\.\d+)?)x?\s*$/i);
+    if(!m)continue;
+    const r=Number(m[1].replace(/,/g,'')),c=Number(m[2]);
+    if(Number.isInteger(r)&&r>1000&&Number.isFinite(c)&&c>=1){
+      rounds[String(r)]={round:r,crash:c,seenAt:Date.now()};n++;
+    }
+  }
+  saveRounds();render();$('#importStatus').textContent=n?`Imported/updated ${n} rows.`:'No valid rows found. Use: round,crash';
+}
+function hex(buf){return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('')}
+async function sha256Hex(s){return hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))}
+async function verifyProof(){
+  const btn=$('#verifyBtn'),status=$('#proofStatus'),bar=$('#proofProgress');
+  const round=Number(String($('#proofRound').value).replace(/,/g,''));
+  const expected=$('#proofHash').value.trim().toLowerCase();
+  const salt=$('#proofSalt').value.trim().toLowerCase();
+  const results=$('#proofResults').value.split(/[\s,;]+/).filter(Boolean).map(x=>Number(x.replace(/x$/i,'')));
+  if(!Number.isInteger(round)||round<=0||results.length!==11||results.some(x=>!Number.isFinite(x))||!/^[0-9a-f]{64}$/.test(expected)||!/^[0-9a-f]{64}$/.test(salt)){
+    status.className='status bad';status.textContent='Need a valid round, exactly 11 results, a 64-character salt, and a 64-character expected hash.';return;
+  }
+  btn.disabled=true;bar.style.width='0%';status.className='status warn';status.textContent='Verifying… this can take a while on an iPhone.';
+  try{
+    const preimage=String(round)+'_'+results.map(x=>x.toFixed(2)).join('_')+'_'+salt;
+    let h=await sha256Hex(preimage);
+    for(let i=0;i<100000;i++){
+      h=await sha256Hex(h);
+      if(i%1000===0){bar.style.width=((i/100000)*100).toFixed(1)+'%';await new Promise(r=>setTimeout(r,0))}
+    }
+    bar.style.width='100%';
+    if(h===expected){status.className='status good';status.innerHTML='MATCH ✅<br><code>'+h+'</code>'}
+    else{status.className='status bad';status.innerHTML='DOES NOT MATCH ❌<br>Calculated: <code>'+h+'</code>'}
+  }catch(e){
+    status.className='status bad';status.textContent='Verifier error: '+(e.message||e);
+  }finally{btn.disabled=false}
+}
+function fillExample(){
+  $('#proofRound').value='1259243';
+  $('#proofHash').value='7d92e3a553825e253a4c1ad033fd50523a5fb89c8bdd890c767ac8f66b51ae76';
+  $('#proofSalt').value='ed8dbd157e9492e91c765126e0c39744719aeafcf4a5e62a222f0ffb17c8dac8';
+  $('#proofResults').value='1.79, 3.35, 2.87, 1.40, 65.26, 1.16, 13.66, 12.48, 72.60, 1.52, 1.03';
+}
+$('#startBtn').addEventListener('click',start);
+$('#refreshBtn').addEventListener('click',poll);
+$('#stopBtn').addEventListener('click',stop);
+$('#exportBtn').addEventListener('click',exportCSV);
+$('#backfillBtn').addEventListener('click',backfillHistory);
+$('#stopBackfillBtn').addEventListener('click',()=>{
+  stopBackfillRequested=true;
+  $('#backfillStatus').textContent='Stopping after the current history request…';
+});
+$('#backfillTarget').addEventListener('change',()=>{
+  prefs.backfillTarget=Number($('#backfillTarget').value)||5000;
+  savePrefs();render();
+});
+$('#autoBackfill').addEventListener('change',()=>{
+  prefs.autoBackfill=$('#autoBackfill').value==='yes';
+  savePrefs();
+});
+$('#importBtn').addEventListener('click',importData);
+$('#clearBtn').addEventListener('click',()=>{
+  if(confirm('Delete all locally saved DCF round data from this companion page?')){
+    rounds={};saveRounds();render();$('#importStatus').textContent='Saved round data cleared.';
+  }
+});
+$('#verifyBtn').addEventListener('click',verifyProof);
+$('#fillExampleBtn').addEventListener('click',fillExample);
+$('#pollSeconds').value=String(prefs.pollSeconds||10);
+$('#roundInput').value=prefs.manualRound||'';
+$('#backfillTarget').value=String(prefs.backfillTarget||5000);
+$('#autoBackfill').value=prefs.autoBackfill===false?'no':'yes';
+setInterval(()=>$('#clock').textContent=new Date().toLocaleTimeString(),1000);
+render();
+})();
+</script>
+</body>
+</html>
